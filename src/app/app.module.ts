@@ -25,7 +25,15 @@ import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { DropdownModule } from 'primeng/dropdown';
+import { ToastModule } from 'primeng/toast';
 import { HttpRequestService } from './services/http-request.service';
+import { MasterDataService } from './services/master-data.service';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
+import { MessageService } from 'primeng/api';
+import { InputSwitchModule } from 'primeng/inputswitch';
+import { CheckboxModule } from 'primeng/checkbox';
 
 @NgModule({
   declarations: [AppComponent],
@@ -40,9 +48,15 @@ import { HttpRequestService } from './services/http-request.service';
     ButtonModule,
     InputTextModule,
     InputNumberModule,
+    DropdownModule,
+    ToastModule,
+    ConfirmDialogModule,
+    InputSwitchModule,
+    CheckboxModule,
   ],
   providers: [
     HttpRequestService,
+    MasterDataService,
     PageService,
     FilterService,
     ColumnChooserService,
@@ -54,6 +68,8 @@ import { HttpRequestService } from './services/http-request.service';
     PdfExportService,
     ContextMenuService,
     FreezeService,
+    MessageService,
+    ConfirmationService,
   ],
   bootstrap: [AppComponent],
 })

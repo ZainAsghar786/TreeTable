@@ -1,3 +1,6 @@
+<p-toast [style]="{ marginTop: '80px' }"></p-toast>
+<p-confirmDialog [style]="{ width: '50vw' }"></p-confirmDialog>
+
 <div class="control-section">
   <ejs-treegrid
     #treegrid
@@ -13,6 +16,8 @@
     [toolbar]="toolbar"
     [allowFiltering]="allowFilter"
     [allowSelection]="false"
+    [allowSorting]="allowSorting"
+    [sortSettings]="sortSettings"
   >
     <e-columns>
       <e-column
@@ -33,6 +38,7 @@
   {{ Col | json }}
 </pre> -->
 
+<!-- #region -------ADD EDIT COL----------- -->
 <p-dialog
   [header]="colHeader"
   [(visible)]="displayResponsive"
@@ -48,15 +54,15 @@
     <div class="grid">
       <div class="col-6">
         <label class="block" for="float-input"><strong> Field</strong></label>
-        <input
-          id="float-input"
-          type="text"
+        <p-dropdown
+          [options]="fieldData"
           name="field"
-          required
           [(ngModel)]="Col.field"
-          pInputText
+          [editable]="true"
+          optionLabel="name"
+          optionValue="id"
           class="w-full"
-        />
+        ></p-dropdown>
       </div>
       <div class="col-6">
         <label class="block" for="Name"><strong>Col Name</strong></label>
@@ -93,6 +99,11 @@
           class="w-full"
         ></p-inputNumber>
       </div>
+      <div class="col-6">
+        <label class="block" for="freeze"><strong>Frozen</strong></label>
+
+        <p-inputSwitch name="freeze" [(ngModel)]="Col.isFrozen"></p-inputSwitch>
+      </div>
     </div>
 
     <div class="flex justify-content-center">
@@ -108,3 +119,134 @@
   </form>
   <!-- #endregion -->
 </p-dialog>
+
+<!-- #endregion -->
+
+<!-- #region --------------MULTISORTING COL -->
+<p-dialog
+  [header]="'Sorting'"
+  [(visible)]="sortDialog"
+  [breakpoints]="{ '960px': '75vw' }"
+  [style]="{ width: '50vw' }"
+  [draggable]="true"
+  [resizable]="false"
+  closeIcon="pi pi-times"
+>
+  <p-inputSwitch
+    name="sortSwitch"
+    (onChange)="onAllowSortChange()"
+    [(ngModel)]="allowSorting"
+  ></p-inputSwitch>
+  <hr />
+  <ng-container *ngIf="allowSorting">
+    <div *ngFor="let col of colsList" class="p-field-checkbox">
+      <p-checkbox
+        name="sort"
+        value="col"
+        [value]="col"
+        [(ngModel)]="selectedSorted"
+        [inputId]="col.field"
+        (onChange)="onMultiSortChange($event)"
+      ></p-checkbox>
+      <label [for]="col.field">{{ col.headerText }}</label>
+    </div>
+  </ng-container>
+</p-dialog>
+
+<!-- #endregion -->
+
+<!-- #region -------ADD EDIT ROWS---------- -->
+<p-dialog
+  [header]="rowHeader"
+  [(visible)]="rowDialog"
+  [breakpoints]="{ '960px': '75vw' }"
+  [style]="{ width: '50vw' }"
+  [draggable]="true"
+  [resizable]="false"
+  closeIcon="pi pi-times"
+>
+  <form class="form-horizontal" (ngSubmit)="rowSubmit()" #NewCol="ngForm">
+    <div class="grid">
+      <div class="col-6">
+        <label class="block" for="TaskID"><strong>TaskID</strong></label>
+
+        <input
+          name="TaskID"
+          class="form-control"
+          required
+          placeholder="Enter TaskID"
+          [(ngModel)]="row.rowData.TaskID"
+          pInputText
+          class="w-full"
+        />
+      </div>
+      <div class="col-6">
+        <label class="block" for="Name"><strong>FIELD1</strong></label>
+
+        <input
+          name="FIELD1"
+          class="form-control"
+          required
+          placeholder="Enter FIELD1"
+          [(ngModel)]="row.rowData.FIELD1"
+          pInputText
+          class="w-full"
+        />
+      </div>
+      <div class="col-6">
+        <label class="block" for="Name"><strong>FIELD2</strong></label>
+
+        <input
+          name="FIELD2"
+          class="form-control"
+          required
+          placeholder="Enter FIELD2"
+          [(ngModel)]="row.rowData.FIELD2"
+          pInputText
+          class="w-full"
+        />
+      </div>
+      <div class="col-6">
+        <label class="block" for="Name"><strong>FIELD3</strong></label>
+
+        <input
+          name="FIELD3"
+          class="form-control"
+          required
+          placeholder="Enter FIELD3"
+          [(ngModel)]="row.rowData.FIELD3"
+          pInputText
+          class="w-full"
+        />
+      </div>
+      <div class="col-6">
+        <label class="block" for="Name"><strong>FIELD4</strong></label>
+
+        <input
+          name="FIELD4"
+          class="form-control"
+          required
+          placeholder="Enter FIELD4"
+          [(ngModel)]="row.rowData.FIELD4"
+          pInputText
+          class="w-full"
+        />
+      </div>
+    </div>
+
+    <div class="flex justify-content-center">
+      <button
+        type="submit"
+        class="mt-2"
+        [disabled]="!NewCol.form.valid"
+        pButton
+      >
+        <i class="fa fa-dot-circle-o"></i> Submit
+      </button>
+    </div>
+  </form>
+</p-dialog>
+<!-- #endregion -->
+<pre>
+  {{ row | json }}
+</pre>

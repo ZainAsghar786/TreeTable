@@ -1,6 +1,4 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { hmData } from './datasource';
-import { virtualData, dataSource } from './datasource2';
 import {
   TreeGridComponent,
   PageSettingsModel,
@@ -15,6 +13,10 @@ import { EmitType } from '@syncfusion/ej2-base';
 import { HttpRequestService } from './services/http-request.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { THIS_EXPR } from '@angular/compiler/src/output/output_ast';
+import { ConfirmationService } from 'primeng/api';
+import { MasterDataService } from './services/master-data.service';
+import { column, backCol } from './models/column';
+import { SortEventArgs } from '@syncfusion/ej2-grids';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -22,60 +24,42 @@ import { THIS_EXPR } from '@angular/compiler/src/output/output_ast';
 })
 export class AppComponent {
   /* #region  -------------------------INITIALIZATION-------------------- */
+  public tableSource;
+  public tableData;
+  tableSubscription;
   public data: Object[] = [];
   public columns: any[];
   @ViewChild('treegrid')
   public treegrid: TreeGridComponent;
   public contextMenuItems: Object;
+  fieldData = [
+    { id: 1, name: 'name' },
+    { id: 2, name: 'fielde2' },
+  ];
 
-  constructor(private http: HttpRequestService) {}
+  constructor(
+    private http: HttpRequestService,
+    private confirmationService: ConfirmationService,
+    private store: MasterDataService
+  ) {}
   /* #endregion */
 
   /* #region  --------------------------LIFE CYCLE------------------- */
   ngOnInit(): void {
-    this.data = hmData;
     this.pageSettings = { pageSize: 10 };
-
-    // dataSource();
-    // console.log(virtualData);
-    this.columns = [
-      {
-        field: 'TaskID',
-        headerText: 'Player Jersey',
-        width: '180',
-        textAlign: 'center',
-        isFrozen: true,
-      },
-      {
-        field: 'FIELD1',
-        headerText: 'Player Name',
-        width: '200',
-        textAlign: 'left',
-        isFrozen: false,
-      },
-      {
-        field: 'FIELD2',
-        headerText: 'Year',
-        width: '100',
-        format: 'yMd',
-        textAlign: 'Right',
-        isFrozen: false,
-      },
-      {
-        field: 'FIELD3',
-        headerText: 'Stint',
-        width: '80',
-        textAlign: 'Right',
-        isFrozen: false,
-      },
-      {
-        field: 'FIELD4',
-        headerText: 'TIMID',
-        width: '80',
-        textAlign: 'Right',
-        isFrozen: false,
-      },
-    ];
+    this.sortSettings = { columns: [] };
+    this.store.loadTableData();
+    this.tableSubscription = this.store.tableData.subscribe((data) => {
+      if (data) {
+        console.log(data.Data.ColData);
+        this.columns = data.Data.ColData;
+        this.data = data.Data.Data;
+        this.getColNames();
+      }
+    });
+    /* #region  OLD COL */
+    this.columns = backCol;
+    /* #endregion */
     this.contextMenuItems = [
       /* #region  ROWS */
       {
@@ -179,6 +163,9 @@ export class AppComponent {
       /* #endregion */
     ];
   }
+  ngOnDestroy(): void {
+    this.tableSubscription.unsubscribe();
+  }
 
   /* #endregion */
 
@@ -188,6 +175,8 @@ export class AppComponent {
   public clickedMenuHeading = 'Dialog';
   public clickedMenuID;
   public clickedCol;
+  public clickedColField;
+  public clickedRowDetail;
   contextMenuOpen(arg?: BeforeOpenCloseEventArgs): void {
     let selectedRow;
     if (arg) {
@@ -197,8 +186,7 @@ export class AppComponent {
       if (cellTypeSource && cellTypeSource['row']) {
         this.isRow = true;
         this.isCol = false;
-        selectedRow = arg['rowInfo']['rowData'];
-        console.log(selectedRow);
+        this.clickedRowDetail = arg['rowInfo']['rowData'];
       } else if (cellTypeSource && !cellTypeSource['row']) {
         this.isCol = true;
         this.isRow = false;
@@ -256,6 +244,7 @@ export class AppComponent {
     this.clickedMenuHeading = args['item']['text'];
     this.clickedMenuID = args['item']['id'];
     this.clickedCol = args['column']['headerText'];
+    this.clickedColField = args['column']['field'];
     if (this.isCol) {
       if (
         this.clickedMenuID.includes('new') ||
@@ -263,21 +252,7 @@ export class AppComponent {
       ) {
         this.showAddEditCol();
       } else if (this.clickedMenuID.includes('del')) {
-        this.columns.forEach((x, i) => {
-          if (x.headerText === this.clickedCol) {
-            this.columns.splice(i, 1);
-            // -
-            // -
-            // -
-            // -
-            // -
-            // -
-            // -
-            // -
-            // -
-            // -
-          }
-        });
+        this.delteCol();
         console.log(this.clickedCol);
       } else if (this.clickedMenuID.includes('choose')) {
         this.showColumnChooser = !this.showColumnChooser;
@@ -290,15 +265,28 @@ export class AppComponent {
       } else if (this.clickedMenuID.includes('filter')) {
         this.allowFilter = !this.allowFilter;
       } else if (this.clickedMenuID.includes('freeze')) {
-        // this.columns.forEach((x) => {
-        //   if (x.headerText === this.clickedCol) {
-        //     x.isFrozen = true;
-        //   }
-        // });
+        this.columns.forEach((x) => {
+          if (x.headerText === this.clickedCol) {
+            console.log(x.isFrozen);
+            x.isFrozen = !x.isFrozen;
+            console.log(x.isFrozen);
+          }
+        });
+      } else if (this.clickedMenuID.includes('sort')) {
+        this.sortDialog = true;
+      }
+    }
+    if (this.isRow) {
+      if (this.clickedMenuID.includes('add')) {
+        this.row.clickedRowTaskID = this.clickedRowDetail.TaskID;
+        this.rowHeader = this.clickedMenuHeading;
+        this.rowDialog = true;
       }
     }
   }
   /* #endregion */
+
+  /* #region  -----------------------COLS--------------------- */
 
   /* #region  -----------------------ADD EDIT Col------------------- */
   public Col = {
@@ -306,9 +294,11 @@ export class AppComponent {
     headerText: '',
     dataType: null,
     width: 50,
+    defaultValue: 1,
+    isFrozen: false,
   };
   /* #region  Submit */
-  confirmSubmit() {
+  colSubmit() {
     if (this.isCol && this.clickedMenuID.includes('new'.toLowerCase())) {
       this.http.postRequest('menu1/newCol', this.Col).subscribe(
         (data) => {
@@ -348,6 +338,8 @@ export class AppComponent {
       headerText: '',
       dataType: null,
       width: 50,
+      defaultValue: 12,
+      isFrozen: false,
     };
   }
   /* #endregion */
@@ -400,5 +392,78 @@ export class AppComponent {
 
   /* #region  ----------------FILTER------------------- */
   allowFilter = false;
+  /* #endregion */
+
+  confirmSubmit() {
+    this.confirmationService.confirm({
+      message: 'Are you sure that you want to proceed?',
+      header: 'Confirmation',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.colSubmit();
+      },
+      reject: () => {},
+    });
+  }
+
+  delteCol() {
+    this.http.putRequest('menu1/delCol/' + this.clickedColField).subscribe(
+      (data) => {
+        this.store.loadTableData();
+      },
+      (err: HttpErrorResponse) => {
+        // this.http.showTost('error', 'Request Failed', 'Something went wrong!');
+      }
+    );
+  }
+
+  /* #region  -------------SORT DIALOG--------------- */
+  colsList = [];
+  sortDialog = false;
+  allowSorting = false;
+  sortSettings;
+  selectedSorted;
+  getColNames() {
+    this.colsList = this.columns.map((x) => {
+      return {
+        field: x.field,
+        headerText: x.headerText,
+        direction: 'Ascending',
+      };
+    });
+  }
+  onAllowSortChange() {
+    this.sortSettings = {};
+    if (!this.allowSorting) {
+      this.colsList = [];
+      this.selectedSorted = [];
+    } else {
+      this.getColNames();
+    }
+  }
+  onMultiSortChange(option) {
+    this.sortSettings = {};
+    this.sortSettings = { columns: this.selectedSorted };
+  }
+
+  /* #endregion */
+  /* #endregion */
+
+  /* #region  ---------------ROWS------------------- */
+  /* #region  ---------------ADD ROWS */
+  rowDialog = false;
+  rowHeader = 'Row';
+  public row = {
+    rowData: {
+      TaskID: null,
+      FIELD1: '',
+      FIELD2: null,
+      FIELD3: null,
+      FIELD4: null,
+    },
+    clickedRowTaskID: null,
+  };
+  rowSubmit() {}
+  /* #endregion */
   /* #endregion */
 }
