@@ -10,14 +10,15 @@ export class MasterDataService {
   constructor(private http: HttpRequestService) {}
 
   // #region Product
-  private _tableData: BehaviorSubject<any> = new BehaviorSubject<any>(null);
-  public readonly tableData: Observable<any> = this._tableData.asObservable();
+  private _tableDataList: BehaviorSubject<any> = new BehaviorSubject<any>(null);
+  public readonly tableDataList: Observable<any> =
+    this._tableDataList.asObservable();
 
   loadTableData() {
     this.http.getRequest('menu1/getall').subscribe(
       (data) => {
         console.log(data);
-        this._tableData.next(JSON.parse(JSON.stringify(data)));
+        this._tableDataList.next(JSON.parse(JSON.stringify(data)));
       },
       (err: HttpErrorResponse) => {
         console.log('Error retrieving Product');

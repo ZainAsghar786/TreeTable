@@ -23,20 +23,135 @@ import { SortEventArgs } from '@syncfusion/ej2-grids';
   styleUrls: ['./app.component.css'],
 })
 export class AppComponent {
-  /* #region  -------------------------INITIALIZATION-------------------- */
-  public tableSource;
+  /* #region  ---------------------INITIALIZATION-------------------- */
+  public sourceTable: any;
   public tableData;
   tableSubscription;
   public data: Object[] = [];
   public columns: any[];
   @ViewChild('treegrid')
   public treegrid: TreeGridComponent;
-  public contextMenuItems: Object;
-  fieldData = [
-    { id: 1, name: 'name' },
-    { id: 2, name: 'fielde2' },
+  fieldData;
+  contextMenuIds = {
+    rowAddNext: 'rowAddNext',
+    rowAddChild: 'rowAddChild',
+    rowDel: 'rowDel',
+    rowEdit: 'rowEdit',
+    rowMultiSelect: 'rowMultiSelect',
+    rowCopy: 'rowCopy',
+    rowCut: 'rowCut',
+    rowPasteNext: 'rowPasteNext',
+    rowPasteChild: 'rowPasteChild',
+    colEdit: 'colEdit',
+    colNew: 'colNew',
+    colDell: 'colDell',
+    colChoose: 'colChoose',
+    colFreeze: 'colFreeze',
+    colFilter: 'colFilter',
+    colMultiSort: 'colMultiSort',
+  };
+  public contextMenuItems = [
+    /* #region  ROWS */
+    {
+      text: 'Add Next',
+      target: '.e-content',
+      id: this.contextMenuIds.rowAddNext,
+      cellType: 'row',
+    },
+    {
+      text: 'Add Child',
+      target: '.e-content',
+      id: this.contextMenuIds.rowAddChild,
+      cellType: 'row',
+    },
+    {
+      text: 'Delete Row',
+      target: '.e-content',
+      id: this.contextMenuIds.rowDel,
+      cellType: 'row',
+    },
+    {
+      text: 'Edit Row',
+      target: '.e-content',
+      id: this.contextMenuIds.rowEdit,
+      cellType: 'row',
+    },
+    {
+      text: 'MultiSelect',
+      target: '.e-content',
+      id: this.contextMenuIds.rowMultiSelect,
+      cellType: 'row',
+    },
+    {
+      text: 'Copy Rows',
+      target: '.e-content',
+      id: this.contextMenuIds.rowCopy,
+      cellType: 'row',
+    },
+    {
+      text: 'Cut Rows',
+      target: '.e-content',
+      id: this.contextMenuIds.rowCut,
+      cellType: 'row',
+    },
+    {
+      text: 'Paste Next',
+      target: '.e-content',
+      id: this.contextMenuIds.rowPasteNext,
+      cellType: 'row',
+    },
+    {
+      text: 'Paste Child',
+      target: '.e-content',
+      id: this.contextMenuIds.rowPasteChild,
+      cellType: 'row',
+    },
+    /* #endregion */
+    /* #region  COLS */
+    {
+      text: 'Edit Col',
+      target: '.e-headercontent',
+      id: this.contextMenuIds.colEdit,
+      cellType: 'col',
+    },
+    {
+      text: 'New Col',
+      target: '.e-headercontent',
+      id: this.contextMenuIds.colNew,
+      cellType: 'col',
+    },
+    {
+      text: 'Del Col',
+      target: '.e-headercontent',
+      id: this.contextMenuIds.colDell,
+      cellType: 'col',
+    },
+    {
+      text: 'Choose Col',
+      target: '.e-headercontent',
+      id: this.contextMenuIds.colChoose,
+      cellType: 'col',
+    },
+    {
+      text: 'Freeze Col',
+      target: '.e-headercontent',
+      id: this.contextMenuIds.colFreeze,
+      cellType: 'col',
+    },
+    {
+      text: 'Filter Col',
+      target: '.e-headercontent',
+      id: this.contextMenuIds.colFilter,
+      cellType: 'col',
+    },
+    {
+      text: 'Multi Sort',
+      target: '.e-headercontent',
+      id: this.contextMenuIds.colMultiSort,
+      cellType: 'col',
+    },
+    /* #endregion */
   ];
-
   constructor(
     private http: HttpRequestService,
     private confirmationService: ConfirmationService,
@@ -44,124 +159,23 @@ export class AppComponent {
   ) {}
   /* #endregion */
 
-  /* #region  --------------------------LIFE CYCLE------------------- */
+  /* #region  ---------------------LIFE CYCLE------------------- */
   ngOnInit(): void {
-    this.pageSettings = { pageSize: 10 };
-    this.sortSettings = { columns: [] };
     this.store.loadTableData();
-    this.tableSubscription = this.store.tableData.subscribe((data) => {
+    this.tableSubscription = this.store.tableDataList.subscribe((data) => {
       if (data) {
-        console.log(data.Data.ColData);
-        this.columns = data.Data.ColData;
-        this.data = data.Data.Data;
+        this.sourceTable = { ...data.Data };
+        this.columns = [...this.sourceTable.ColData];
+        this.tableData = [...this.sourceTable.Data];
         this.getColNames();
+        this.getFieldsData();
+      } else {
+        this.tableData = [];
       }
     });
-    /* #region  OLD COL */
-    this.columns = backCol;
-    /* #endregion */
-    this.contextMenuItems = [
-      /* #region  ROWS */
-      {
-        text: 'Add Next',
-        target: '.e-content',
-        id: 'row-addnext',
-        cellType: 'row',
-      },
-      {
-        text: 'Add Child',
-        target: '.e-content',
-        id: 'row-addchild',
-        cellType: 'row',
-      },
-      {
-        text: 'Delete Row',
-        target: '.e-content',
-        id: 'row-del',
-        cellType: 'row',
-      },
-      {
-        text: 'Edit Row',
-        target: '.e-content',
-        id: 'row-edit',
-        cellType: 'row',
-      },
-      {
-        text: 'MultiSelect',
-        target: '.e-content',
-        id: 'row-multi-select',
-        cellType: 'row',
-      },
-      {
-        text: 'Copy Rows',
-        target: '.e-content',
-        id: 'row-copy',
-        cellType: 'row',
-      },
-      {
-        text: 'Cut Rows',
-        target: '.e-content',
-        id: 'row-cut',
-        cellType: 'row',
-      },
-      {
-        text: 'Paste Next',
-        target: '.e-content',
-        id: 'row-paste-next',
-        cellType: 'row',
-      },
-      {
-        text: 'Paste Child',
-        target: '.e-content',
-        id: 'row-paste-child',
-        cellType: 'row',
-      },
-      /* #endregion */
-      /* #region  COLS */
-      {
-        text: 'Edit Col',
-        target: '.e-headercontent',
-        id: 'col-edit',
-        cellType: 'col',
-      },
-      {
-        text: 'New Col',
-        target: '.e-headercontent',
-        id: 'col-new',
-        cellType: 'col',
-      },
-      {
-        text: 'Del Col',
-        target: '.e-headercontent',
-        id: 'col-del',
-        cellType: 'col',
-      },
-      {
-        text: 'Choose Col',
-        target: '.e-headercontent',
-        id: 'col-choose',
-        cellType: 'col',
-      },
-      {
-        text: 'Freeze Col',
-        target: '.e-headercontent',
-        id: 'col-freeze',
-        cellType: 'col',
-      },
-      {
-        text: 'Filter Col',
-        target: '.e-headercontent',
-        id: 'col-filter',
-        cellType: 'col',
-      },
-      {
-        text: 'Multi Sort',
-        target: '.e-headercontent',
-        id: 'col-multisort',
-        cellType: 'col',
-      },
-      /* #endregion */
-    ];
+    this.sortSettings = { columns: [] };
+    this.pageSettings = { pageSize: 10 };
+    this.selectionsettings = { persistSelection: true };
   }
   ngOnDestroy(): void {
     this.tableSubscription.unsubscribe();
@@ -169,12 +183,12 @@ export class AppComponent {
 
   /* #endregion */
 
-  /* #region --------------------------CONTEXT MENU FUNCTIONS---------------- */
+  /* #region ----------------------CONTEXT MENU FUNCTIONS---------------- */
   public isRow: boolean = false;
   public isCol: boolean = false;
   public clickedMenuHeading = 'Dialog';
   public clickedMenuID;
-  public clickedCol;
+  public clickedColHeader;
   public clickedColField;
   public clickedRowDetail;
   contextMenuOpen(arg?: BeforeOpenCloseEventArgs): void {
@@ -224,37 +238,22 @@ export class AppComponent {
         colMenu[i].setAttribute('style', 'display: none;');
       }
     }
-
-    // if (elem.closest('.e-row')) {
-    //   if (
-    //     isNullOrUndefined(uid) ||
-    //     isNullOrUndefined(
-    //       getValue(
-    //         'hasChildRecords',
-    //         this.treegrid.grid.getRowObjectFromUID(uid).data
-    //       )
-    //     )
-    //   ) {
-    //     arg.cancel = true;
-    //   }
-    // }
   }
   contextMenuClick(args?: MenuEventArgs): void {
     console.log(args);
     this.clickedMenuHeading = args['item']['text'];
     this.clickedMenuID = args['item']['id'];
-    this.clickedCol = args['column']['headerText'];
+    this.clickedColHeader = args['column']['headerText'];
     this.clickedColField = args['column']['field'];
     if (this.isCol) {
       if (
-        this.clickedMenuID.includes('new') ||
-        this.clickedMenuID.includes('edit')
+        this.clickedMenuID === this.contextMenuIds.colNew ||
+        this.clickedMenuID === this.contextMenuIds.colEdit
       ) {
         this.showAddEditCol();
-      } else if (this.clickedMenuID.includes('del')) {
-        this.delteCol();
-        console.log(this.clickedCol);
-      } else if (this.clickedMenuID.includes('choose')) {
+      } else if (this.clickedMenuID === this.contextMenuIds.colDell) {
+        this.confirmDeleteCol();
+      } else if (this.clickedMenuID === this.contextMenuIds.colChoose) {
         this.showColumnChooser = !this.showColumnChooser;
         this.allowPaging = !this.allowPaging;
         if (this.showColumnChooser) {
@@ -262,72 +261,121 @@ export class AppComponent {
         } else {
           this.toolbar = '';
         }
-      } else if (this.clickedMenuID.includes('filter')) {
+      } else if (this.clickedMenuID === this.contextMenuIds.colFilter) {
         this.allowFilter = !this.allowFilter;
-      } else if (this.clickedMenuID.includes('freeze')) {
-        this.columns.forEach((x) => {
-          if (x.headerText === this.clickedCol) {
-            console.log(x.isFrozen);
-            x.isFrozen = !x.isFrozen;
-            console.log(x.isFrozen);
-          }
-        });
-      } else if (this.clickedMenuID.includes('sort')) {
+      } else if (this.clickedMenuID === this.contextMenuIds.colFreeze) {
+        this.resetCol();
+        this.Col = {
+          ...this.columns.filter((x) => x.field === this.clickedColField)[0],
+        };
+        this.confirmFreezeCol();
+      } else if (this.clickedMenuID === this.contextMenuIds.colMultiSort) {
         this.sortDialog = true;
       }
     }
     if (this.isRow) {
-      if (this.clickedMenuID.includes('add')) {
+      if (this.clickedMenuID === this.contextMenuIds.rowAddNext) {
+        this.resetRow();
+        this.row.clickedRowTaskID = this.clickedRowDetail.TaskID;
+        this.rowHeader = this.clickedMenuHeading;
+        this.row.flag = 'next';
+        this.rowDialog = true;
+      } else if (this.clickedMenuID === this.contextMenuIds.rowAddChild) {
+        this.resetRow();
         this.row.clickedRowTaskID = this.clickedRowDetail.TaskID;
         this.rowHeader = this.clickedMenuHeading;
         this.rowDialog = true;
+      } else if (this.clickedMenuID === this.contextMenuIds.rowEdit) {
+        this.rowHeader = this.clickedMenuHeading;
+        this.rowDialog = true;
+        this.row.rowData = this.clickedRowDetail;
+        this.trimRowData(this.row.rowData);
+      } else if (this.clickedMenuID === this.contextMenuIds.rowMultiSelect) {
+        this.allowPaging = !this.allowPaging;
+      } else if (this.clickedMenuID === this.contextMenuIds.rowDel) {
+        this.confirmRowDelete();
+      } else if (this.clickedMenuID === this.contextMenuIds.rowCopy) {
+        console.log(Object.entries(this.copyPasteObj.rowData).length >= 1);
+        this.copyPasteObj.rowData = this.clickedRowDetail;
+        this.copyPasteObj.copyOrCut = 'copy';
+        this.trimRowData(this.copyPasteObj.rowData);
+      } else if (this.clickedMenuID === this.contextMenuIds.rowCut) {
+        console.log(Object.entries(this.copyPasteObj.rowData).length >= 1);
+        this.copyPasteObj.rowData = this.clickedRowDetail;
+        this.copyPasteObj.copyOrCut = 'cut';
+        this.trimRowData(this.copyPasteObj.rowData);
+      } else if (this.clickedMenuID === this.contextMenuIds.rowPasteNext) {
+        this.copyPasteObj.clickedRowTaskID = this.clickedRowDetail.TaskID;
+        this.copyPasteObj.pasteWhere = 'next';
+        this.confirmCopyPasteSubmit();
+      } else if (this.clickedMenuID === this.contextMenuIds.rowPasteChild) {
+        this.copyPasteObj.clickedRowTaskID = this.clickedRowDetail.TaskID;
+        this.copyPasteObj.pasteWhere = 'child';
+        this.confirmCopyPasteSubmit();
       }
     }
   }
   /* #endregion */
 
-  /* #region  -----------------------COLS--------------------- */
+  /* #region  ---------------------COLS--------------------------------------------------------------------------------------------- */
 
   /* #region  -----------------------ADD EDIT Col------------------- */
   public Col = {
     field: '',
     headerText: '',
     dataType: null,
-    width: 50,
+    width: 200,
     defaultValue: 1,
     isFrozen: false,
   };
+  public fieldsData;
+  getFieldsData() {
+    const fieldDataArray = this.sourceTable.Data[0];
+    let keys = Object.keys(fieldDataArray);
+    this.fieldData = keys.map((x) => {
+      return { field: x };
+    });
+  }
   /* #region  Submit */
   colSubmit() {
-    if (this.isCol && this.clickedMenuID.includes('new'.toLowerCase())) {
-      this.http.postRequest('menu1/newCol', this.Col).subscribe(
-        (data) => {
-          // this.store.loadAccountData();
-          this.displayResponsive = false;
-          this.columns.push(this.Col);
-          this.resetCol();
-          // this.http.showTost('info', 'Success', data.status.message);
-        },
-        (err: HttpErrorResponse) => {
-          // this.http.showTost('error', 'Request Failed', 'Something went wrong!');
-        }
-      );
-    } else if (
-      this.isCol &&
-      this.clickedMenuID.includes('edit'.toLowerCase())
-    ) {
-      this.http.postRequest('col/update', this.Col).subscribe(
-        (data) => {
-          // this.store.loadAccountData();
-          this.displayResponsive = false;
-          this.columns.push(this.Col);
-          this.resetCol();
-          // this.http.showTost('info', 'Success', data.status.message);
-        },
-        (err: HttpErrorResponse) => {
-          // this.http.showTost('error', 'Request Failed', 'Something went wrong!');
-        }
-      );
+    if (this.isCol) {
+      if (this.clickedMenuID === this.contextMenuIds.colNew) {
+        this.http.postRequest('menu1/newCol', this.Col).subscribe(
+          (data) => {
+            this.http.showTost('info', 'Success', data.Status.message);
+            this.store.loadTableData();
+            this.displayResponsive = false;
+            this.resetCol();
+          },
+          (err: HttpErrorResponse) => {
+            console.log(err);
+            this.http.showTost(
+              'error',
+              'Request Failed',
+              err.error.Status.message
+            );
+          }
+        );
+      } else if (
+        this.clickedMenuID === this.contextMenuIds.colEdit ||
+        this.clickedMenuID === this.contextMenuIds.colFreeze
+      ) {
+        this.http.putRequest('menu1/editCol', this.Col).subscribe(
+          (data) => {
+            this.http.showTost('info', 'Success', data.Status.message);
+            this.store.loadTableData();
+            this.displayResponsive = false;
+          },
+          (err: HttpErrorResponse) => {
+            console.log(err);
+            this.http.showTost(
+              'error',
+              'Request Failed',
+              err.error.Status.message
+            );
+          }
+        );
+      }
     }
   }
   /* #endregion */
@@ -337,27 +385,27 @@ export class AppComponent {
       field: '',
       headerText: '',
       dataType: null,
-      width: 50,
+      width: 200,
       defaultValue: 12,
       isFrozen: false,
     };
   }
   /* #endregion */
 
-  /* #region  ---------------------SHOW DIALOG */
+  /* #region  ----------------------SHOW DIALOG */
   colHeader = 'Col';
   displayResponsive = false;
   showAddEditCol() {
     this.colHeader = this.clickedMenuHeading;
     this.displayResponsive = true;
     if (this.isCol) {
-      if (this.clickedMenuID.includes('edit'.toLowerCase())) {
+      if (this.clickedMenuID === this.contextMenuIds.colEdit) {
         const clickedColDetail = this.columns.filter(
-          (x) => x.headerText === this.clickedCol
+          (x) => x.headerText === this.clickedColHeader
         )[0];
         this.Col = clickedColDetail;
         console.log(clickedColDetail);
-      } else if (this.clickedMenuID.includes('new'.toLowerCase())) {
+      } else if (this.clickedMenuID === this.contextMenuIds.colNew) {
         this.resetCol();
       }
     }
@@ -365,7 +413,7 @@ export class AppComponent {
 
   /* #endregion */
 
-  /* #region  Submit Call */
+  /* #region ------------------------Submit Call-------------- */
   SubmitBox(api, data, dialog) {
     this.http.postRequest(api, data).subscribe(
       (data) => {
@@ -373,7 +421,7 @@ export class AppComponent {
         dialog = false;
         this.columns.push(this.Col);
         this.resetCol();
-        // this.http.showTost('info', 'Success', data.status.message);
+        // this.http.showTost('info', 'Success', data.Status.message);
       },
       (err: HttpErrorResponse) => {
         // this.http.showTost('error', 'Request Failed', 'Something went wrong!');
@@ -382,7 +430,7 @@ export class AppComponent {
   }
   /* #endregion */
 
-  /* #region  -----------CHOOSE COLUMN-------------- */
+  /* #region  -----------------------CHOOSE COLUMN-------------- */
   showColumnChooser = false;
   allowPaging = false;
   public pageSettings: PageSettingsModel;
@@ -390,7 +438,47 @@ export class AppComponent {
 
   /* #endregion */
 
-  /* #region  ----------------FILTER------------------- */
+  /* #region  -----------------------DELETE COL------------------ */
+  confirmDeleteCol() {
+    this.confirmationService.confirm({
+      message: 'Are you sure that you want to proceed?',
+      header: 'Confirmation',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.deleteColSubmit();
+      },
+      reject: () => {},
+    });
+  }
+  deleteColSubmit() {
+    this.http.deleteRequest('menu1/delCol/' + this.clickedColField).subscribe(
+      (data) => {
+        this.store.loadTableData();
+        this.http.showTost('info', 'Success', data.Status.message);
+      },
+      (err: HttpErrorResponse) => {
+        this.http.showTost('error', 'Request Failed', err.error.Status.message);
+      }
+    );
+  }
+  /* #endregion */
+
+  /* #region  -----------------------FREEZE COL--------------- */
+  confirmFreezeCol() {
+    this.confirmationService.confirm({
+      message: 'Are you sure that you want to proceed?',
+      header: 'Confirmation',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.Col.isFrozen = !this.Col.isFrozen;
+        this.colSubmit();
+      },
+      reject: () => {},
+    });
+  }
+  /* #endregion */
+
+  /* #region  -----------------------FILTER------------------- */
   allowFilter = false;
   /* #endregion */
 
@@ -404,17 +492,6 @@ export class AppComponent {
       },
       reject: () => {},
     });
-  }
-
-  delteCol() {
-    this.http.putRequest('menu1/delCol/' + this.clickedColField).subscribe(
-      (data) => {
-        this.store.loadTableData();
-      },
-      (err: HttpErrorResponse) => {
-        // this.http.showTost('error', 'Request Failed', 'Something went wrong!');
-      }
-    );
   }
 
   /* #region  -------------SORT DIALOG--------------- */
@@ -449,7 +526,23 @@ export class AppComponent {
   /* #endregion */
   /* #endregion */
 
-  /* #region  ---------------ROWS------------------- */
+  /* #region  ---------------------ROWS------------------- */
+  trimRowData(row) {
+    /* #region  ---DELETE EXTRA OBJECT--- */
+    if (row['Crew']) {
+      delete row['Crew'];
+    }
+    if (row['taskData']) {
+      delete row['taskData'];
+    }
+    if (row['childRecords']) {
+      delete row['childRecords'];
+    }
+    if (row['parentItem']) {
+      delete row['parentItem'];
+    }
+    /* #endregion */
+  }
   /* #region  ---------------ADD ROWS */
   rowDialog = false;
   rowHeader = 'Row';
@@ -462,8 +555,135 @@ export class AppComponent {
       FIELD4: null,
     },
     clickedRowTaskID: null,
+    flag: '',
   };
-  rowSubmit() {}
+  resetRow() {
+    this.row = {
+      rowData: {
+        TaskID: null,
+        FIELD1: '',
+        FIELD2: null,
+        FIELD3: null,
+        FIELD4: null,
+      },
+      clickedRowTaskID: null,
+      flag: '',
+    };
+  }
+  confirmRowSubmit() {
+    this.confirmationService.confirm({
+      message: 'Are you sure that you want to proceed?',
+      header: 'Confirmation',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.rowSubmit();
+      },
+      reject: () => {},
+    });
+  }
+  rowSubmit() {
+    if (this.isRow) {
+      if (
+        this.clickedMenuID === this.contextMenuIds.rowAddNext ||
+        this.clickedMenuID === this.contextMenuIds.rowAddChild
+      ) {
+        this.http.postRequest('menu2/newRow', this.row).subscribe(
+          (data) => {
+            this.store.loadTableData();
+            this.rowDialog = false;
+            this.resetRow();
+            this.http.showTost('info', 'Success', data.Status.message);
+          },
+          (err: HttpErrorResponse) => {
+            this.http.showTost('error', 'Request Failed', err.error.message);
+          }
+        );
+      } else if (this.clickedMenuID === this.contextMenuIds.rowEdit) {
+        this.http.putRequest('menu2/editRow', this.row).subscribe(
+          (data) => {
+            this.store.loadTableData();
+            this.rowDialog = false;
+            this.http.showTost('info', 'Success', data.Status.message);
+          },
+          (err: HttpErrorResponse) => {
+            this.http.showTost('error', 'Request Failed', err.error.message);
+          }
+        );
+      }
+    }
+  }
   /* #endregion */
+
+  /* #region  -------------------ROW DELETE---------------- */
+  confirmRowDelete() {
+    this.confirmationService.confirm({
+      message: 'Are you sure that you want to proceed?',
+      header: 'Confirmation',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.rowDeleteSubmit();
+      },
+      reject: () => {},
+    });
+  }
+  rowDeleteSubmit() {
+    this.http
+      .deleteRequest('menu2/delRow/' + this.clickedRowDetail.TaskID)
+      .subscribe(
+        (data) => {
+          this.store.loadTableData();
+          this.http.showTost('info', 'Success', data.Status.message);
+        },
+        (err: HttpErrorResponse) => {
+          this.http.showTost(
+            'error',
+            'Request Failed',
+            'Something went wrong!'
+          );
+        }
+      );
+  }
+  /* #endregion */
+
+  /* #region  ----------------COPY ROW------------- */
+  public copyPasteObj = {
+    pasteWhere: '',
+    copyOrCut: '',
+    clickedRowTaskID: null,
+    rowData: {},
+  };
+  public canPaste = false;
+
+  confirmCopyPasteSubmit() {
+    this.confirmationService.confirm({
+      message: 'Are you sure that you want to proceed?',
+      header: 'Confirmation',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.copyPasteSubmit();
+      },
+      reject: () => {},
+    });
+  }
+  copyPasteSubmit() {
+    if (this.isRow) {
+      this.http.postRequest('menu2/paste', this.row).subscribe(
+        (data) => {
+          this.store.loadTableData();
+          this.http.showTost('info', 'Success', data.Status.message);
+        },
+        (err: HttpErrorResponse) => {
+          this.http.showTost('error', 'Request Failed', err.error.message);
+        }
+      );
+    }
+  }
+
+  /* #endregion */
+
+  /* #region  --------MULTI SELECT */
+  public selectionsettings: Object;
+  /* #endregion */
+
   /* #endregion */
 }
