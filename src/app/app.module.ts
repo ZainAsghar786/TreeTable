@@ -20,6 +20,8 @@ import {
   PdfExportService,
   ContextMenuService,
 } from '@syncfusion/ej2-angular-treegrid';
+// import { ButtonModule } from '@syncfusion/ej2-angular-buttons';
+import { DropDownListAllModule } from '@syncfusion/ej2-angular-dropdowns';
 import { AppComponent } from './app.component';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
@@ -53,6 +55,7 @@ import { CheckboxModule } from 'primeng/checkbox';
     ConfirmDialogModule,
     InputSwitchModule,
     CheckboxModule,
+    DropDownListAllModule,
   ],
   providers: [
     HttpRequestService,

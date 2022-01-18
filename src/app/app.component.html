@@ -15,15 +15,16 @@
     [showColumnChooser]="showColumnChooser"
     [toolbar]="toolbar"
     [allowFiltering]="allowFilter"
-    [allowSelection]="false"
+    [allowSelection]="allowSelection"
     [allowSorting]="allowSorting"
     [sortSettings]="sortSettings"
-    [selectionSettings]="selectionsettings"
   >
     <e-columns>
+      <!-- <e-column *ngIf="expression" type="checkbox" width="50"></e-column> -->
       <e-column
         *ngFor="let col of columns"
         [field]="col.field ? col.field : ''"
+        [isPrimaryKey]="col.field === 'TaskID' ? true : ''"
         [headerText]="col.headerText ? col.headerText : ''"
         [width]="col.width ? col.width : ''"
         [textAlign]="col.textAlign ? col.textAlign : ''"
@@ -253,5 +254,5 @@
 </p-dialog>
 <!-- #endregion -->
 <pre>
-  {{ copyPasteObj | json }}
+  {{ Col | json }}
 </pre>

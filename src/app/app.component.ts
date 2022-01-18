@@ -175,7 +175,6 @@ export class AppComponent {
     });
     this.sortSettings = { columns: [] };
     this.pageSettings = { pageSize: 10 };
-    this.selectionsettings = { persistSelection: true };
   }
   ngOnDestroy(): void {
     this.tableSubscription.unsubscribe();
@@ -226,6 +225,21 @@ export class AppComponent {
     if (this.isCol) {
       for (let i: number = 0; i < colMenu.length; i++) {
         colMenu[i].setAttribute('style', 'display: block;');
+        if (colMenu[i].id === this.contextMenuIds.colChoose) {
+          this.showColumnChooser
+            ? (colMenu[i].style.backgroundColor = '#69E433')
+            : (colMenu[i].style.backgroundColor = 'white');
+        }
+        if (colMenu[i].id === this.contextMenuIds.colFilter) {
+          this.allowFilter
+            ? (colMenu[i].style.backgroundColor = '#69E433')
+            : (colMenu[i].style.backgroundColor = 'white');
+        }
+        if (colMenu[i].id === this.contextMenuIds.colMultiSort) {
+          this.allowSorting
+            ? (colMenu[i].style.backgroundColor = '#69E433')
+            : (colMenu[i].style.backgroundColor = 'white');
+        }
       }
       for (let i: number = 0; i < rowMenu.length; i++) {
         rowMenu[i].setAttribute('style', 'display: none;');
@@ -233,6 +247,33 @@ export class AppComponent {
     } else if (this.isRow) {
       for (let i: number = 0; i < rowMenu.length; i++) {
         rowMenu[i].setAttribute('style', 'display: block;');
+        if (rowMenu[i].id === this.contextMenuIds.rowAddChild) {
+          if (this.clickedRowDetail.parentItem) {
+            rowMenu[i].setAttribute('style', 'display:none');
+          }
+        }
+        if (
+          rowMenu[i].id === this.contextMenuIds.rowPasteChild ||
+          rowMenu[i].id === this.contextMenuIds.rowPasteNext
+        ) {
+          if (Object.entries(this.copyPasteObj.rowData).length <= 0)
+            rowMenu[i].setAttribute('style', 'display:none');
+        }
+        if (rowMenu[i].id === this.contextMenuIds.rowMultiSelect) {
+          this.allowSelection
+            ? (rowMenu[i].style.backgroundColor = '#69E433')
+            : (rowMenu[i].style.backgroundColor = 'white');
+        }
+        if (rowMenu[i].id === this.contextMenuIds.rowCopy) {
+          this.copyPasteObj.copyOrCut === 'copy'
+            ? (rowMenu[i].style.backgroundColor = '#69E433')
+            : (rowMenu[i].style.backgroundColor = 'white');
+        }
+        if (rowMenu[i].id === this.contextMenuIds.rowCut) {
+          this.copyPasteObj.copyOrCut === 'cut'
+            ? (rowMenu[i].style.backgroundColor = '#69E433')
+            : (rowMenu[i].style.backgroundColor = 'white');
+        }
       }
       for (let i: number = 0; i < colMenu.length; i++) {
         colMenu[i].setAttribute('style', 'display: none;');
@@ -272,9 +313,9 @@ export class AppComponent {
       } else if (this.clickedMenuID === this.contextMenuIds.colMultiSort) {
         this.sortDialog = true;
       }
-    }
-    if (this.isRow) {
+    } else if (this.isRow) {
       if (this.clickedMenuID === this.contextMenuIds.rowAddNext) {
+        console.log('row');
         this.resetRow();
         this.row.clickedRowTaskID = this.clickedRowDetail.TaskID;
         this.rowHeader = this.clickedMenuHeading;
@@ -291,7 +332,11 @@ export class AppComponent {
         this.row.rowData = this.clickedRowDetail;
         this.trimRowData(this.row.rowData);
       } else if (this.clickedMenuID === this.contextMenuIds.rowMultiSelect) {
-        this.allowPaging = !this.allowPaging;
+        // this.allowPaging = !this.allowPaging;
+        this.allowSelection = !this.allowSelection;
+        setTimeout(() => {
+          this.columns = [...this.sourceTable.ColData];
+        }, 0);
       } else if (this.clickedMenuID === this.contextMenuIds.rowDel) {
         this.confirmRowDelete();
       } else if (this.clickedMenuID === this.contextMenuIds.rowCopy) {
@@ -386,7 +431,7 @@ export class AppComponent {
       headerText: '',
       dataType: null,
       width: 200,
-      defaultValue: 12,
+      defaultValue: 120,
       isFrozen: false,
     };
   }
@@ -645,7 +690,7 @@ export class AppComponent {
   }
   /* #endregion */
 
-  /* #region  ----------------COPY ROW------------- */
+  /* #region  ----------------COPY CUT ROW------------- */
   public copyPasteObj = {
     pasteWhere: '',
     copyOrCut: '',
@@ -653,6 +698,14 @@ export class AppComponent {
     rowData: {},
   };
   public canPaste = false;
+  resetCopyPasteObj() {
+    this.copyPasteObj = {
+      pasteWhere: '',
+      copyOrCut: '',
+      clickedRowTaskID: null,
+      rowData: {},
+    };
+  }
 
   confirmCopyPasteSubmit() {
     this.confirmationService.confirm({
@@ -670,6 +723,7 @@ export class AppComponent {
       this.http.postRequest('menu2/paste', this.row).subscribe(
         (data) => {
           this.store.loadTableData();
+          this.resetCopyPasteObj();
           this.http.showTost('info', 'Success', data.Status.message);
         },
         (err: HttpErrorResponse) => {
@@ -682,8 +736,25 @@ export class AppComponent {
   /* #endregion */
 
   /* #region  --------MULTI SELECT */
-  public selectionsettings: Object;
+  public selectionsettings = {
+    type: 'multiple',
+    mode: 'both',
+    checkboxOnly: true,
+    persistSelection: true,
+  };
+  allowSelection = true;
   /* #endregion */
 
+  /* #endregion */
+
+  /* #region  -----------test---------- */
+  getTestData() {
+    if (this.treegrid && this.treegrid.selectionModule) {
+      console.log(this.treegrid);
+    }
+  }
+  test() {
+    console.log('object');
+  }
   /* #endregion */
 }
