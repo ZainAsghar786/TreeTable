@@ -19,7 +19,9 @@ import {
   ExcelExportService,
   PdfExportService,
   ContextMenuService,
+  VirtualScrollService,
 } from '@syncfusion/ej2-angular-treegrid';
+import { NgxSpinnerModule } from 'ngx-spinner';
 // import { ButtonModule } from '@syncfusion/ej2-angular-buttons';
 import { DropDownListAllModule } from '@syncfusion/ej2-angular-dropdowns';
 import { AppComponent } from './app.component';
@@ -56,6 +58,7 @@ import { CheckboxModule } from 'primeng/checkbox';
     InputSwitchModule,
     CheckboxModule,
     DropDownListAllModule,
+    NgxSpinnerModule,
   ],
   providers: [
     HttpRequestService,
@@ -64,6 +67,7 @@ import { CheckboxModule } from 'primeng/checkbox';
     FilterService,
     ColumnChooserService,
     EditService,
+    VirtualScrollService,
     ToolbarService,
     SortService,
     ResizeService,

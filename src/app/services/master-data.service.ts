@@ -21,6 +21,7 @@ export class MasterDataService {
         this._tableDataList.next(JSON.parse(JSON.stringify(data)));
       },
       (err: HttpErrorResponse) => {
+        console.log(err);
         console.log('Error retrieving Product');
         this.http.showTost('error', 'Request Failed', 'Something went wrong!');
       }

@@ -1,46 +1,57 @@
+<!-- #region ----------------TOAST CONFIRM DIALOG--------->
 <p-toast [style]="{ marginTop: '80px' }"></p-toast>
 <p-confirmDialog [style]="{ width: '50vw' }"></p-confirmDialog>
+<ngx-spinner
+  bdColor="rgba(0, 0, 0, 0.8)"
+  size="medium"
+  color="#fff"
+  type="ball-scale-pulse"
+  [fullScreen]="false"
+></ngx-spinner>
 
-<div class="control-section">
+<!-- #endregion -->
+
+<!-- #region ---------------EJS TABLE--------------------->
+<div *ngIf="tableData.length >= 1" class="control-section">
   <ejs-treegrid
     #treegrid
     [dataSource]="tableData"
     height="400"
-    childMapping="Crew"
+    [childMapping]="childMapping"
     [allowPaging]="allowPaging"
     [treeColumnIndex]="1"
     [contextMenuItems]="contextMenuItems"
     (contextMenuOpen)="contextMenuOpen($event)"
     (contextMenuClick)="contextMenuClick($event)"
-    [showColumnChooser]="showColumnChooser"
+    [showColumnChooser]="allowColumnChooser"
     [toolbar]="toolbar"
+    [enableVirtualization]="allowVirtualization"
     [allowFiltering]="allowFilter"
     [allowSelection]="allowSelection"
     [allowSorting]="allowSorting"
     [sortSettings]="sortSettings"
+    [selectionSettings]="selectionSettings"
+    (rowSelected)="rowSelected($event)"
   >
     <e-columns>
-      <!-- <e-column *ngIf="expression" type="checkbox" width="50"></e-column> -->
+      <e-column *ngIf="allowSelection" type="checkbox" width="50"></e-column>
       <e-column
         *ngFor="let col of columns"
-        [field]="col.field ? col.field : ''"
-        [isPrimaryKey]="col.field === 'TaskID' ? true : ''"
-        [headerText]="col.headerText ? col.headerText : ''"
-        [width]="col.width ? col.width : ''"
-        [textAlign]="col.textAlign ? col.textAlign : ''"
-        [isFrozen]="col.isFrozen ? col.isFrozen : false"
+        [field]="col.hasOwnProperty('field') ? col.field : ''"
+        [headerText]="col.hasOwnProperty('headerText') ? col.headerText : ''"
+        [textAlign]="col.hasOwnProperty('textAlign') ? col.textAlign : ''"
+        [isFrozen]="
+          col.hasOwnProperty('isFrozen') && col.isFrozen ? true : false
+        "
+        [width]="col.hasOwnProperty('width') && col.width ? col.width : ''"
+        [isPrimaryKey]="col.field === 'TaskID' ? true : false"
       ></e-column>
     </e-columns>
   </ejs-treegrid>
 </div>
+<!-- #endregion -->
 
-<!-- #region  -->
-
-<!-- <pre>
-  {{ Col | json }}
-</pre> -->
-
-<!-- #region -------ADD EDIT COL----------- -->
+<!-- #region --------------ADD EDIT COL-------------------->
 <p-dialog
   [header]="colHeader"
   [(visible)]="displayResponsive"
@@ -93,6 +104,21 @@
         />
       </div>
       <div class="col-6">
+        <label class="block" for="DefaultValue"
+          ><strong>Default Value</strong></label
+        >
+
+        <input
+          name="defaultValue"
+          class="form-control"
+          required
+          placeholder="Enter Default Value"
+          [(ngModel)]="Col.defaultValue"
+          pInputText
+          class="w-full"
+        />
+      </div>
+      <div class="col-6">
         <label class="block" for="Width"><strong>Width</strong></label>
 
         <p-inputNumber
@@ -124,7 +150,7 @@
 
 <!-- #endregion -->
 
-<!-- #region --------------MULTISORTING COL -->
+<!-- #region --------------MULTISORTING COL --------------->
 <p-dialog
   [header]="'Sorting'"
   [(visible)]="sortDialog"
@@ -157,7 +183,7 @@
 
 <!-- #endregion -->
 
-<!-- #region -------ADD EDIT ROWS---------- -->
+<!-- #region --------------ADD EDIT ROWS------------------>
 <p-dialog
   [header]="rowHeader"
   [(visible)]="rowDialog"
@@ -253,6 +279,7 @@
   </form>
 </p-dialog>
 <!-- #endregion -->
+
 <pre>
-  {{ Col | json }}
+  {{ allowVirtualization | json }}
 </pre>

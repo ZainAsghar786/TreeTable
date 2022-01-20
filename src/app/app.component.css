@@ -9,7 +9,13 @@
 #container {
   visibility: hidden;
 }
-:host ::ng-deep .p-inputnumber,
-p-inputnumber {
+:host ::ng-deep p-inputnumber,
+.p-inputnumber {
+  width: 100%;
+}
+:host ::ng-deep .p-dropdown.p-component {
+  width: 100%;
+}
+:host ::ng-deep span.p-inputnumber.p-component {
   width: 100%;
 }

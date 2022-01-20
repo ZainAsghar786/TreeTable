@@ -11,8 +11,8 @@ export class HttpRequestService {
     private messageService: MessageService
   ) {}
   // http://localhost:3000/v1/menu1/newCol
-  // private url: string = 'http://localhost:3000' + '/v1/';
-  private url: string = 'http://192.168.31.142:3000' + '/v1/';
+  private url: string = 'http://localhost:3000' + '/v1/';
+  // private url: string = 'http://192.168.31.142:3000' + '/v1/';
   //private url: string = 'http://139.59.36.91/SalesAssistApi/api/';
 
   getRequest(addr): Observable<any> {

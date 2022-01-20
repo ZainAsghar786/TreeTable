@@ -161,7 +161,7 @@ export function dataSource(): void {
     'RATTC',
     'FAMIA',
   ];
-  for (let i: number = 0; i < 500; i++) {
+  for (let i: number = 0; i < 5000; i++) {
     if (i % 5 === 0) {
       parent = i;
     }

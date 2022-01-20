@@ -6,17 +6,14 @@ import {
 import { getValue, isNullOrUndefined } from '@syncfusion/ej2-base';
 import { BeforeOpenCloseEventArgs } from '@syncfusion/ej2-inputs';
 import { MenuEventArgs } from '@syncfusion/ej2-navigations';
-import { MenuItemModel } from '@syncfusion/ej2-navigations';
-import { stringify } from 'querystring';
-import { DialogComponent } from '@syncfusion/ej2-angular-popups';
-import { EmitType } from '@syncfusion/ej2-base';
 import { HttpRequestService } from './services/http-request.service';
 import { HttpErrorResponse } from '@angular/common/http';
-import { THIS_EXPR } from '@angular/compiler/src/output/output_ast';
 import { ConfirmationService } from 'primeng/api';
 import { MasterDataService } from './services/master-data.service';
-import { column, backCol } from './models/column';
 import { SortEventArgs } from '@syncfusion/ej2-grids';
+import { dataSource, virtualData } from './datasource2';
+import { templateJitUrl } from '@angular/compiler';
+import { NgxSpinnerService } from 'ngx-spinner';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -24,14 +21,20 @@ import { SortEventArgs } from '@syncfusion/ej2-grids';
 })
 export class AppComponent {
   /* #region  ---------------------INITIALIZATION-------------------- */
-  public sourceTable: any;
-  public tableData;
-  tableSubscription;
+  public sourceTableData: any;
+  public tableData: any[] = [];
   public data: Object[] = [];
+  public sourceColumns: any[];
   public columns: any[];
+
+  tableSubscription;
   @ViewChild('treegrid')
   public treegrid: TreeGridComponent;
+
+  allowVirtualization = true;
+  childMapping = 'Crew';
   fieldData;
+
   contextMenuIds = {
     rowAddNext: 'rowAddNext',
     rowAddChild: 'rowAddChild',
@@ -145,7 +148,7 @@ export class AppComponent {
       cellType: 'col',
     },
     {
-      text: 'Multi Sort',
+      text: 'Sorting',
       target: '.e-headercontent',
       id: this.contextMenuIds.colMultiSort,
       cellType: 'col',
@@ -155,26 +158,34 @@ export class AppComponent {
   constructor(
     private http: HttpRequestService,
     private confirmationService: ConfirmationService,
-    private store: MasterDataService
+    private store: MasterDataService,
+    private spinner: NgxSpinnerService
   ) {}
   /* #endregion */
 
-  /* #region  ---------------------LIFE CYCLE------------------- */
+  /* #region  ---------------------LIFE CYCLE------------------------ */
   ngOnInit(): void {
     this.store.loadTableData();
+    this.spinner.show();
     this.tableSubscription = this.store.tableDataList.subscribe((data) => {
       if (data) {
-        this.sourceTable = { ...data.Data };
-        this.columns = [...this.sourceTable.ColData];
-        this.tableData = [...this.sourceTable.Data];
-        this.getColNames();
-        this.getFieldsData();
-      } else {
+        this.spinner.show();
+        this.columns = [];
         this.tableData = [];
+        this.sourceColumns = [...data.Data.ColData];
+        this.sourceTableData = [...data.Data.Data];
+        setTimeout(() => {
+          this.columns = [...this.sourceColumns];
+          this.tableData = [...this.sourceTableData];
+          this.getColNames();
+          this.getFieldsData();
+          this.checkFreezeCol();
+          this.spinner.hide();
+          this.sortSettings = { columns: [] };
+          this.pageSettings = { pageSize: 10 };
+        }, 0);
       }
     });
-    this.sortSettings = { columns: [] };
-    this.pageSettings = { pageSize: 10 };
   }
   ngOnDestroy(): void {
     this.tableSubscription.unsubscribe();
@@ -182,7 +193,7 @@ export class AppComponent {
 
   /* #endregion */
 
-  /* #region ----------------------CONTEXT MENU FUNCTIONS---------------- */
+  /* #region ----------------------CONTEXT MENU FUNCTIONS------------- */
   public isRow: boolean = false;
   public isCol: boolean = false;
   public clickedMenuHeading = 'Dialog';
@@ -191,29 +202,28 @@ export class AppComponent {
   public clickedColField;
   public clickedRowDetail;
   contextMenuOpen(arg?: BeforeOpenCloseEventArgs): void {
-    let selectedRow;
     if (arg) {
       /* #region  -------------------GETTING CELL TYPE ON CLICK ROW OR COL-------------- */
       console.log(arg);
       const cellTypeSource = arg['rowInfo'];
+      const ColDetail = arg['column'];
       if (cellTypeSource && cellTypeSource['row']) {
         this.isRow = true;
         this.isCol = false;
-        this.clickedRowDetail = arg['rowInfo']['rowData'];
-      } else if (cellTypeSource && !cellTypeSource['row']) {
+        this.clickedRowDetail = { ...arg['rowInfo']['rowData'] };
+      } else if (
+        cellTypeSource &&
+        !cellTypeSource['row'] &&
+        ColDetail != null
+      ) {
         this.isCol = true;
         this.isRow = false;
+      } else {
+        this.isRow = false;
+        this.isCol = false;
       }
       /* #endregion */
     }
-    let elem: Element = arg.event.target as Element;
-    /* #region  UNUSED YET */
-    let row: Element = elem.closest('.e-row');
-    let uid: string = row && row.getAttribute('data-uid');
-    if (uid) {
-      let rowdata = this.treegrid.grid.getRowObjectFromUID(uid).data;
-    }
-    /* #endregion */
 
     /* #region  GETTING MENU AND DIFFERENTIATE ROW MENU AND COL MENU ON THE BASIS OF CONTEXTMENU ID */
     let totalMenu: Array<HTMLElement> = [].slice.call(
@@ -226,7 +236,7 @@ export class AppComponent {
       for (let i: number = 0; i < colMenu.length; i++) {
         colMenu[i].setAttribute('style', 'display: block;');
         if (colMenu[i].id === this.contextMenuIds.colChoose) {
-          this.showColumnChooser
+          this.allowColumnChooser
             ? (colMenu[i].style.backgroundColor = '#69E433')
             : (colMenu[i].style.backgroundColor = 'white');
         }
@@ -274,18 +284,32 @@ export class AppComponent {
             ? (rowMenu[i].style.backgroundColor = '#69E433')
             : (rowMenu[i].style.backgroundColor = 'white');
         }
+        if (rowMenu[i].id === this.contextMenuIds.rowPasteChild) {
+          this.clickedRowDetail.parentItem
+            ? rowMenu[i].setAttribute('style', 'display: none;')
+            : '';
+        }
+        if (rowMenu[i].id === this.contextMenuIds.rowPasteNext) {
+        }
       }
       for (let i: number = 0; i < colMenu.length; i++) {
         colMenu[i].setAttribute('style', 'display: none;');
+      }
+    } else {
+      for (let i: number = 0; i < totalMenu.length; i++) {
+        totalMenu[i].setAttribute('style', 'display: none;');
+        if (totalMenu[i].id === this.contextMenuIds.rowAddNext) {
+          totalMenu[i].setAttribute('style', 'display: block;');
+        }
       }
     }
   }
   contextMenuClick(args?: MenuEventArgs): void {
     console.log(args);
-    this.clickedMenuHeading = args['item']['text'];
-    this.clickedMenuID = args['item']['id'];
-    this.clickedColHeader = args['column']['headerText'];
-    this.clickedColField = args['column']['field'];
+    this.clickedMenuHeading = args['item']['text'] ? args['item']['text'] : '';
+    this.clickedMenuID = args['item']['id'] ? args['item']['id'] : '';
+    this.clickedColHeader = args['column'] ? args['column']['headerText'] : '';
+    this.clickedColField = args['column'] ? args['column']['field'] : '';
     if (this.isCol) {
       if (
         this.clickedMenuID === this.contextMenuIds.colNew ||
@@ -295,13 +319,17 @@ export class AppComponent {
       } else if (this.clickedMenuID === this.contextMenuIds.colDell) {
         this.confirmDeleteCol();
       } else if (this.clickedMenuID === this.contextMenuIds.colChoose) {
-        this.showColumnChooser = !this.showColumnChooser;
-        this.allowPaging = !this.allowPaging;
-        if (this.showColumnChooser) {
+        this.allowColumnChooser = !this.allowColumnChooser;
+        if (this.allowColumnChooser) {
           this.toolbar = ['ColumnChooser'];
+          this.allowPaging = true;
+          this.allowVirtualization = false;
         } else {
           this.toolbar = '';
+          this.allowPaging = false;
+          this.allowVirtualization = true;
         }
+        // this.resetTableData();
       } else if (this.clickedMenuID === this.contextMenuIds.colFilter) {
         this.allowFilter = !this.allowFilter;
       } else if (this.clickedMenuID === this.contextMenuIds.colFreeze) {
@@ -311,11 +339,10 @@ export class AppComponent {
         };
         this.confirmFreezeCol();
       } else if (this.clickedMenuID === this.contextMenuIds.colMultiSort) {
-        this.sortDialog = true;
+        this.allowSorting = !this.allowSorting;
       }
     } else if (this.isRow) {
       if (this.clickedMenuID === this.contextMenuIds.rowAddNext) {
-        console.log('row');
         this.resetRow();
         this.row.clickedRowTaskID = this.clickedRowDetail.TaskID;
         this.rowHeader = this.clickedMenuHeading;
@@ -329,26 +356,52 @@ export class AppComponent {
       } else if (this.clickedMenuID === this.contextMenuIds.rowEdit) {
         this.rowHeader = this.clickedMenuHeading;
         this.rowDialog = true;
-        this.row.rowData = this.clickedRowDetail;
+        this.row.rowData = { ...this.clickedRowDetail };
         this.trimRowData(this.row.rowData);
       } else if (this.clickedMenuID === this.contextMenuIds.rowMultiSelect) {
         // this.allowPaging = !this.allowPaging;
         this.allowSelection = !this.allowSelection;
-        setTimeout(() => {
-          this.columns = [...this.sourceTable.ColData];
-        }, 0);
+        this.resetCopyPasteObj();
+        this.resetTableData();
+        if (this.allowSelection) {
+          this.isMultiSelected = true;
+        } else {
+          this.isMultiSelected = false;
+        }
       } else if (this.clickedMenuID === this.contextMenuIds.rowDel) {
+        if (this.isMultiSelected && this.multiSelectedRows.length >= 1) {
+          this.deleteRowList = this.multiSelectedRows;
+        } else {
+          const tempObj = { ...this.clickedRowDetail };
+          this.deleteRowList = [tempObj];
+        }
+
+        this.deleteRowList = this.deleteRowList.map((x) => {
+          return {
+            TaskID: x.TaskID,
+            level: x.level,
+          };
+        });
         this.confirmRowDelete();
       } else if (this.clickedMenuID === this.contextMenuIds.rowCopy) {
-        console.log(Object.entries(this.copyPasteObj.rowData).length >= 1);
-        this.copyPasteObj.rowData = this.clickedRowDetail;
+        if (this.isMultiSelected) {
+          const tempObj = [...this.multiSelectedRows];
+          this.copyPasteObj.rowData = tempObj;
+        } else {
+          const tempOBJ = { ...this.clickedRowDetail };
+          this.copyPasteObj.rowData = [tempOBJ];
+        }
+        this.copyPasteObj.rowData.forEach((x) => this.trimRowData(x));
         this.copyPasteObj.copyOrCut = 'copy';
-        this.trimRowData(this.copyPasteObj.rowData);
       } else if (this.clickedMenuID === this.contextMenuIds.rowCut) {
-        console.log(Object.entries(this.copyPasteObj.rowData).length >= 1);
-        this.copyPasteObj.rowData = this.clickedRowDetail;
+        if (this.isMultiSelected) {
+          this.copyPasteObj.rowData = this.multiSelectedRows;
+        } else {
+          const tempOBJ = { ...this.clickedRowDetail };
+          this.copyPasteObj.rowData = [tempOBJ];
+        }
+        this.copyPasteObj.rowData.forEach((x) => this.trimRowData(x));
         this.copyPasteObj.copyOrCut = 'cut';
-        this.trimRowData(this.copyPasteObj.rowData);
       } else if (this.clickedMenuID === this.contextMenuIds.rowPasteNext) {
         this.copyPasteObj.clickedRowTaskID = this.clickedRowDetail.TaskID;
         this.copyPasteObj.pasteWhere = 'next';
@@ -358,7 +411,24 @@ export class AppComponent {
         this.copyPasteObj.pasteWhere = 'child';
         this.confirmCopyPasteSubmit();
       }
+    } else {
+      if (this.clickedMenuID === this.contextMenuIds.rowAddNext) {
+        this.resetRow();
+        this.row.clickedRowTaskID = null;
+        this.rowHeader = this.clickedMenuHeading;
+        this.row.flag = 'next';
+        this.rowDialog = true;
+      }
     }
+  }
+  /* #endregion */
+
+  /* #region  -------------------RESET THE TABLE DATA FOR STABILITY---------- */
+  resetTableData() {
+    this.tableData = [];
+    setTimeout(() => {
+      this.tableData = [...this.sourceTableData];
+    }, 0);
   }
   /* #endregion */
 
@@ -375,15 +445,23 @@ export class AppComponent {
   };
   public fieldsData;
   getFieldsData() {
-    const fieldDataArray = this.sourceTable.Data[0];
-    let keys = Object.keys(fieldDataArray);
-    this.fieldData = keys.map((x) => {
-      return { field: x };
-    });
+    if (this.tableData.length >= 1) {
+      const fieldDataArray = this.tableData[0];
+      let keys = Object.keys(fieldDataArray);
+      const keysInShowedCols = this.columns.map((x) => x.field);
+      this.fieldData = keys
+        .filter((x) => !keysInShowedCols.includes(x))
+        .filter((x) => x !== this.childMapping)
+        .map((x) => {
+          return { field: x };
+        });
+    } else {
+      this.http.showTost('warn', 'No Data', 'Please Add Some Data first');
+    }
   }
-  /* #region  Submit */
   colSubmit() {
     if (this.isCol) {
+      this.spinner.show();
       if (this.clickedMenuID === this.contextMenuIds.colNew) {
         this.http.postRequest('menu1/newCol', this.Col).subscribe(
           (data) => {
@@ -391,9 +469,10 @@ export class AppComponent {
             this.store.loadTableData();
             this.displayResponsive = false;
             this.resetCol();
+            this.spinner.hide();
           },
           (err: HttpErrorResponse) => {
-            console.log(err);
+            this.spinner.hide();
             this.http.showTost(
               'error',
               'Request Failed',
@@ -410,8 +489,10 @@ export class AppComponent {
             this.http.showTost('info', 'Success', data.Status.message);
             this.store.loadTableData();
             this.displayResponsive = false;
+            this.spinner.hide();
           },
           (err: HttpErrorResponse) => {
+            this.spinner.hide();
             console.log(err);
             this.http.showTost(
               'error',
@@ -423,8 +504,6 @@ export class AppComponent {
       }
     }
   }
-  /* #endregion */
-
   resetCol() {
     this.Col = {
       field: '',
@@ -446,10 +525,9 @@ export class AppComponent {
     if (this.isCol) {
       if (this.clickedMenuID === this.contextMenuIds.colEdit) {
         const clickedColDetail = this.columns.filter(
-          (x) => x.headerText === this.clickedColHeader
+          (x) => x.field === this.clickedColField
         )[0];
         this.Col = clickedColDetail;
-        console.log(clickedColDetail);
       } else if (this.clickedMenuID === this.contextMenuIds.colNew) {
         this.resetCol();
       }
@@ -476,7 +554,7 @@ export class AppComponent {
   /* #endregion */
 
   /* #region  -----------------------CHOOSE COLUMN-------------- */
-  showColumnChooser = false;
+  allowColumnChooser = false;
   allowPaging = false;
   public pageSettings: PageSettingsModel;
   public toolbar: any;
@@ -496,12 +574,15 @@ export class AppComponent {
     });
   }
   deleteColSubmit() {
+    this.spinner.show();
     this.http.deleteRequest('menu1/delCol/' + this.clickedColField).subscribe(
       (data) => {
         this.store.loadTableData();
+        this.spinner.hide();
         this.http.showTost('info', 'Success', data.Status.message);
       },
       (err: HttpErrorResponse) => {
+        this.spinner.hide();
         this.http.showTost('error', 'Request Failed', err.error.Status.message);
       }
     );
@@ -509,6 +590,14 @@ export class AppComponent {
   /* #endregion */
 
   /* #region  -----------------------FREEZE COL--------------- */
+  checkFreezeCol() {
+    this.columns.forEach((x) => {
+      if (x.isFrozen) {
+        this.allowVirtualization = false;
+        return;
+      }
+    });
+  }
   confirmFreezeCol() {
     this.confirmationService.confirm({
       message: 'Are you sure that you want to proceed?',
@@ -571,24 +660,49 @@ export class AppComponent {
   /* #endregion */
   /* #endregion */
 
-  /* #region  ---------------------ROWS------------------- */
+  /* #region  ---------------------ROWS-------------------------------------------------------------------------- */
+
+  /* #region  ---------------------TRIM ROW-------------------------- */
   trimRowData(row) {
     /* #region  ---DELETE EXTRA OBJECT--- */
-    if (row['Crew']) {
+    if (row.hasOwnProperty('Crew')) {
       delete row['Crew'];
     }
-    if (row['taskData']) {
+    if (row.hasOwnProperty('taskData')) {
       delete row['taskData'];
     }
-    if (row['childRecords']) {
+    if (row.hasOwnProperty('childRecords')) {
       delete row['childRecords'];
     }
-    if (row['parentItem']) {
+    if (row.hasOwnProperty('parentItem')) {
       delete row['parentItem'];
+    }
+    if (row.hasOwnProperty('hasChildRecords')) {
+      delete row['hasChildRecords'];
+    }
+    // if (row.hasOwnProperty('level')) {
+    //   delete row['level'];
+    // }
+    if (row.hasOwnProperty('expanded')) {
+      delete row['expanded'];
+    }
+    if (row.hasOwnProperty('checkboxState')) {
+      delete row['checkboxState'];
+    }
+    if (row.hasOwnProperty('index')) {
+      delete row['index'];
+    }
+    if (row.hasOwnProperty('uniqueID')) {
+      delete row['uniqueID'];
+    }
+    if (row.hasOwnProperty('parentUniqueID')) {
+      delete row['parentUniqueID'];
     }
     /* #endregion */
   }
-  /* #region  ---------------ADD ROWS */
+  /* #endregion */
+
+  /* #region  --------------------ADD ROWS---------------------------- */
   rowDialog = false;
   rowHeader = 'Row';
   public row = {
@@ -627,39 +741,44 @@ export class AppComponent {
     });
   }
   rowSubmit() {
-    if (this.isRow) {
-      if (
-        this.clickedMenuID === this.contextMenuIds.rowAddNext ||
-        this.clickedMenuID === this.contextMenuIds.rowAddChild
-      ) {
-        this.http.postRequest('menu2/newRow', this.row).subscribe(
-          (data) => {
-            this.store.loadTableData();
-            this.rowDialog = false;
-            this.resetRow();
-            this.http.showTost('info', 'Success', data.Status.message);
-          },
-          (err: HttpErrorResponse) => {
-            this.http.showTost('error', 'Request Failed', err.error.message);
-          }
-        );
-      } else if (this.clickedMenuID === this.contextMenuIds.rowEdit) {
-        this.http.putRequest('menu2/editRow', this.row).subscribe(
-          (data) => {
-            this.store.loadTableData();
-            this.rowDialog = false;
-            this.http.showTost('info', 'Success', data.Status.message);
-          },
-          (err: HttpErrorResponse) => {
-            this.http.showTost('error', 'Request Failed', err.error.message);
-          }
-        );
-      }
+    if (
+      this.clickedMenuID === this.contextMenuIds.rowAddNext ||
+      this.clickedMenuID === this.contextMenuIds.rowAddChild
+    ) {
+      this.spinner.show();
+      this.http.postRequest('menu2/newRow', this.row).subscribe(
+        (data) => {
+          this.store.loadTableData();
+          this.rowDialog = false;
+          this.resetRow();
+          this.spinner.hide();
+          this.http.showTost('info', 'Success', data.Status.message);
+        },
+        (err: HttpErrorResponse) => {
+          this.spinner.hide();
+          this.http.showTost('error', 'Request Failed', err.error.message);
+        }
+      );
+    } else if (this.clickedMenuID === this.contextMenuIds.rowEdit) {
+      this.spinner.show();
+      this.http.putRequest('menu2/editRow', this.row).subscribe(
+        (data) => {
+          this.store.loadTableData();
+          this.rowDialog = false;
+          this.spinner.hide();
+          this.http.showTost('info', 'Success', data.Status.message);
+        },
+        (err: HttpErrorResponse) => {
+          this.spinner.hide();
+          this.http.showTost('error', 'Request Failed', err.error.message);
+        }
+      );
     }
   }
   /* #endregion */
 
-  /* #region  -------------------ROW DELETE---------------- */
+  /* #region  --------------------ROW DELETE-------------------------- */
+  deleteRowList: any[] = [];
   confirmRowDelete() {
     this.confirmationService.confirm({
       message: 'Are you sure that you want to proceed?',
@@ -672,30 +791,28 @@ export class AppComponent {
     });
   }
   rowDeleteSubmit() {
-    this.http
-      .deleteRequest('menu2/delRow/' + this.clickedRowDetail.TaskID)
-      .subscribe(
-        (data) => {
-          this.store.loadTableData();
-          this.http.showTost('info', 'Success', data.Status.message);
-        },
-        (err: HttpErrorResponse) => {
-          this.http.showTost(
-            'error',
-            'Request Failed',
-            'Something went wrong!'
-          );
-        }
-      );
+    this.spinner.show();
+    this.http.putRequest('menu2/delRow/', this.deleteRowList).subscribe(
+      (data) => {
+        this.deleteRowList = [];
+        this.store.loadTableData();
+        this.spinner.hide();
+        this.http.showTost('info', 'Success', data.Status.message);
+      },
+      (err: HttpErrorResponse) => {
+        this.spinner.hide();
+        this.http.showTost('error', 'Request Failed', err.error.Status.message);
+      }
+    );
   }
   /* #endregion */
 
-  /* #region  ----------------COPY CUT ROW------------- */
+  /* #region  --------------------COPY CUT ROW------------------------ */
   public copyPasteObj = {
     pasteWhere: '',
     copyOrCut: '',
     clickedRowTaskID: null,
-    rowData: {},
+    rowData: [],
   };
   public canPaste = false;
   resetCopyPasteObj() {
@@ -703,10 +820,9 @@ export class AppComponent {
       pasteWhere: '',
       copyOrCut: '',
       clickedRowTaskID: null,
-      rowData: {},
+      rowData: [],
     };
   }
-
   confirmCopyPasteSubmit() {
     this.confirmationService.confirm({
       message: 'Are you sure that you want to proceed?',
@@ -720,13 +836,16 @@ export class AppComponent {
   }
   copyPasteSubmit() {
     if (this.isRow) {
-      this.http.postRequest('menu2/paste', this.row).subscribe(
+      this.spinner.show();
+      this.http.postRequest('menu2/pasteRow', this.copyPasteObj).subscribe(
         (data) => {
           this.store.loadTableData();
           this.resetCopyPasteObj();
+          this.spinner.hide();
           this.http.showTost('info', 'Success', data.Status.message);
         },
         (err: HttpErrorResponse) => {
+          this.spinner.hide();
           this.http.showTost('error', 'Request Failed', err.error.message);
         }
       );
@@ -735,26 +854,39 @@ export class AppComponent {
 
   /* #endregion */
 
-  /* #region  --------MULTI SELECT */
-  public selectionsettings = {
-    type: 'multiple',
-    mode: 'both',
+  /* #region  --------------------MULTI SELECT------------------------- */
+  public selectionSettings = {
     checkboxOnly: true,
     persistSelection: true,
   };
-  allowSelection = true;
-  /* #endregion */
+  allowSelection = false;
+  isMultiSelected = false;
+  multiSelectedRows: any[] = [];
+  rowSelected(data) {
+    let rowList;
+    if (data.rowIndexes) {
+      if (data.isHeaderCheckboxClicked) {
+        this.multiSelectedRows = data.data;
+      } else {
+        const selectedRowIndexes = data.rowIndexes;
+        const flatData = this.treegrid.flatData.map((x) => x);
+        this.multiSelectedRows = flatData.filter((x, i) => {
+          return selectedRowIndexes.includes(i);
+        });
+      }
+      console.log(data);
 
-  /* #endregion */
-
-  /* #region  -----------test---------- */
-  getTestData() {
-    if (this.treegrid && this.treegrid.selectionModule) {
-      console.log(this.treegrid);
+      // this.multiSelectedRows.forEach((x) => this.trimRowData(x));
+      this.multiSelectedRows.length >= 1
+        ? (this.isMultiSelected = true)
+        : (this.isMultiSelected = false);
     }
   }
-  test() {
-    console.log('object');
-  }
   /* #endregion */
+
+  /* #endregion */
+
+  test(r) {
+    console.log(r, ' for ');
+  }
 }
