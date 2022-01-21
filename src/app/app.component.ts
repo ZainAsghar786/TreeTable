@@ -182,6 +182,11 @@ export class AppComponent {
   ngOnDestroy(): void {
     this.tableSubscription.unsubscribe();
   }
+  refreshSourceData(data) {
+    this.sourceColumns = [...data.Data.ColData];
+    this.sourceTableData = [...data.Data.Data];
+    this.refreshWholeData();
+  }
   refreshWholeData() {
     this.columns = [];
     this.tableData = [];
@@ -464,16 +469,15 @@ export class AppComponent {
   }
   colSubmit() {
     if (this.isCol) {
-      this.spinner.show();
       if (this.clickedMenuID === this.contextMenuIds.colNew) {
+        this.spinner.show();
         this.http.postRequest('menu1/newCol', this.Col).subscribe(
           (data) => {
             this.http.showTost('info', 'Success', data.Status.message);
-            this.sourceColumns = [...data.Data.ColData];
-            this.resetCol();
-            this.refreshWholeData();
-            this.displayResponsive = false;
+            this.store.loadTableData();
             this.spinner.hide();
+            this.resetCol();
+            this.displayResponsive = false;
           },
           (err: HttpErrorResponse) => {
             this.spinner.hide();
@@ -491,8 +495,7 @@ export class AppComponent {
         this.http.putRequest('menu1/editCol', this.Col).subscribe(
           (data) => {
             this.http.showTost('info', 'Success', data.Status.message);
-            this.sourceColumns = [...data.Data.ColData];
-            this.refreshWholeData();
+            this.store.loadTableData();
             this.displayResponsive = false;
             this.spinner.hide();
           },
@@ -502,7 +505,7 @@ export class AppComponent {
             this.http.showTost(
               'error',
               'Request Failed',
-              err.error.Status.message
+              err.error.Status ? err.error.Status.message : err.error.message
             );
           }
         );
@@ -541,23 +544,6 @@ export class AppComponent {
 
   /* #endregion */
 
-  /* #region ------------------------Submit Call-------------- */
-  SubmitBox(api, data, dialog) {
-    this.http.postRequest(api, data).subscribe(
-      (data) => {
-        // this.store.loadAccountData();
-        dialog = false;
-        this.columns.push(this.Col);
-        this.resetCol();
-        // this.http.showTost('info', 'Success', data.Status.message);
-      },
-      (err: HttpErrorResponse) => {
-        // this.http.showTost('error', 'Request Failed', 'Something went wrong!');
-      }
-    );
-  }
-  /* #endregion */
-
   /* #region  -----------------------CHOOSE COLUMN-------------- */
   allowColumnChooser = false;
   allowPaging = false;
@@ -583,15 +569,16 @@ export class AppComponent {
     this.http.deleteRequest('menu1/delCol/' + this.clickedColField).subscribe(
       (data) => {
         this.store.loadTableData();
-        this.sourceColumns = [...data.Data.Data];
-        this.sourceColumns = [...data.Data.ColData];
-        this.refreshWholeData();
         this.spinner.hide();
         this.http.showTost('info', 'Success', data.Status.message);
       },
       (err: HttpErrorResponse) => {
         this.spinner.hide();
-        this.http.showTost('error', 'Request Failed', err.error.Status.message);
+        this.http.showTost(
+          'error',
+          'Request Failed',
+          err.error.Status ? err.error.Status.message : err.error.message
+        );
       }
     );
   }
@@ -757,10 +744,10 @@ export class AppComponent {
       this.spinner.show();
       this.http.postRequest('menu2/newRow', this.row).subscribe(
         (data) => {
-          this.store.loadTableData();
-          this.rowDialog = false;
-          this.resetRow();
           this.spinner.hide();
+          this.rowDialog = false;
+          this.store.loadTableData();
+          this.resetRow();
           this.http.showTost('info', 'Success', data.Status.message);
         },
         (err: HttpErrorResponse) => {

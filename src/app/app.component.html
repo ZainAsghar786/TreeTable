@@ -65,7 +65,7 @@
 
   <form class="form-horizontal" (ngSubmit)="confirmSubmit()" #NewCol="ngForm">
     <div class="grid">
-      <div class="col-6" *ngIf="colHeader.includes('New')">
+      <div class="md:col-6 col-12" *ngIf="colHeader.includes('New')">
         <label class="block" for="float-input"><strong> Field</strong></label>
         <p-dropdown
           [options]="fieldData"
@@ -77,7 +77,7 @@
           class="w-full"
         ></p-dropdown>
       </div>
-      <div class="col-6">
+      <div class="md:col-6 col-12">
         <label class="block" for="Name"><strong>Col Name</strong></label>
 
         <input
@@ -90,7 +90,7 @@
           class="w-full"
         />
       </div>
-      <div class="col-6">
+      <div class="md:col-6 col-12">
         <label class="block" for="Data Type"><strong>Data Type</strong></label>
 
         <input
@@ -103,7 +103,7 @@
           class="w-full"
         />
       </div>
-      <div class="col-6">
+      <div class="md:col-6 col-12">
         <label class="block" for="DefaultValue"
           ><strong>Default Value</strong></label
         >
@@ -118,7 +118,7 @@
           class="w-full"
         />
       </div>
-      <div class="col-6">
+      <div class="md:col-6 col-12">
         <label class="block" for="Width"><strong>Width</strong></label>
 
         <p-inputNumber
@@ -127,7 +127,7 @@
           class="w-full"
         ></p-inputNumber>
       </div>
-      <div class="col-6">
+      <div class="md:col-6 col-12">
         <label class="block" for="freeze"><strong>Frozen</strong></label>
 
         <p-inputSwitch name="freeze" [(ngModel)]="Col.isFrozen"></p-inputSwitch>
@@ -199,7 +199,7 @@
     #NewRow="ngForm"
   >
     <div class="grid">
-      <!-- <div class="col-6">
+      <!-- <div class="md:col-6 col-12">
         <label class="block" for="TaskID"><strong>TaskID</strong></label>
 
         <input
@@ -212,7 +212,7 @@
           class="w-full"
         />
       </div> -->
-      <div class="col-6">
+      <div class="md:col-6 col-12">
         <label class="block" for="Name"><strong>FIELD1</strong></label>
 
         <input
@@ -225,7 +225,7 @@
           class="w-full"
         />
       </div>
-      <div class="col-6">
+      <div class="md:col-6 col-12">
         <label class="block" for="Name"><strong>FIELD2</strong></label>
 
         <input
@@ -238,7 +238,7 @@
           class="w-full"
         />
       </div>
-      <div class="col-6">
+      <div class="md:col-6 col-12">
         <label class="block" for="Name"><strong>FIELD3</strong></label>
 
         <input
@@ -251,7 +251,7 @@
           class="w-full"
         />
       </div>
-      <div class="col-6">
+      <div class="md:col-6 col-12">
         <label class="block" for="Name"><strong>FIELD4</strong></label>
 
         <input
@@ -280,6 +280,6 @@
 </p-dialog>
 <!-- #endregion -->
 
-<pre>
+<!-- <pre>
   {{ deleteRowList | json }}
-</pre>
+</pre> -->
