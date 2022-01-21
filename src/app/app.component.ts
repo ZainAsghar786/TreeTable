@@ -170,25 +170,28 @@ export class AppComponent {
     this.tableSubscription = this.store.tableDataList.subscribe((data) => {
       if (data) {
         this.spinner.show();
-        this.columns = [];
-        this.tableData = [];
         this.sourceColumns = [...data.Data.ColData];
         this.sourceTableData = [...data.Data.Data];
-        setTimeout(() => {
-          this.columns = [...this.sourceColumns];
-          this.tableData = [...this.sourceTableData];
-          this.getColNames();
-          this.getFieldsData();
-          this.checkFreezeCol();
-          this.spinner.hide();
-          this.sortSettings = { columns: [] };
-          this.pageSettings = { pageSize: 10 };
-        }, 0);
+        this.refreshWholeData();
+        this.spinner.hide();
+        this.sortSettings = { columns: [] };
+        this.pageSettings = { pageSize: 10 };
       }
     });
   }
   ngOnDestroy(): void {
     this.tableSubscription.unsubscribe();
+  }
+  refreshWholeData() {
+    this.columns = [];
+    this.tableData = [];
+    setTimeout(() => {
+      this.columns = [...this.sourceColumns];
+      this.tableData = [...this.sourceTableData];
+      this.getColNames();
+      this.getFieldsData();
+      this.checkFreezeCol();
+    }, 0);
   }
 
   /* #endregion */
@@ -466,9 +469,10 @@ export class AppComponent {
         this.http.postRequest('menu1/newCol', this.Col).subscribe(
           (data) => {
             this.http.showTost('info', 'Success', data.Status.message);
-            this.store.loadTableData();
-            this.displayResponsive = false;
+            this.sourceColumns = [...data.Data.ColData];
             this.resetCol();
+            this.refreshWholeData();
+            this.displayResponsive = false;
             this.spinner.hide();
           },
           (err: HttpErrorResponse) => {
@@ -487,7 +491,8 @@ export class AppComponent {
         this.http.putRequest('menu1/editCol', this.Col).subscribe(
           (data) => {
             this.http.showTost('info', 'Success', data.Status.message);
-            this.store.loadTableData();
+            this.sourceColumns = [...data.Data.ColData];
+            this.refreshWholeData();
             this.displayResponsive = false;
             this.spinner.hide();
           },
@@ -578,6 +583,9 @@ export class AppComponent {
     this.http.deleteRequest('menu1/delCol/' + this.clickedColField).subscribe(
       (data) => {
         this.store.loadTableData();
+        this.sourceColumns = [...data.Data.Data];
+        this.sourceColumns = [...data.Data.ColData];
+        this.refreshWholeData();
         this.spinner.hide();
         this.http.showTost('info', 'Success', data.Status.message);
       },
@@ -591,6 +599,7 @@ export class AppComponent {
 
   /* #region  -----------------------FREEZE COL--------------- */
   checkFreezeCol() {
+    this.allowVirtualization = true;
     this.columns.forEach((x) => {
       if (x.isFrozen) {
         this.allowVirtualization = false;
